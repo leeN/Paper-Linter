@@ -86,8 +86,10 @@ def in_any_float(line):
     return False
 
 def in_code(line):
-    if "lstlisting" in in_env:
-        return in_env["lstlisting"][line]
+    codes = [ "lstlisting", "minted" ]
+    for c in codes:
+        if c in in_env:
+            return in_env[c][line]
     return False
 
 def in_equation(line):
@@ -294,7 +296,12 @@ def check_comment_has_space():
             if ls[0] != "%":
                 c = re.search("[^\\s\\\\\\}\\{%]+%", l)
                 if c and not in_code(i):
-                    warns.append((i, "Comment without a whitespace before", c.span()))
+                    (cpos,cend) = c.span()
+                    #print("Matched '" + l + "' and cpos: " + str(cpos))
+                    if cpos > 0:
+                        prec = l[cpos-1]
+                        if prec != '\\':
+                            warns.append((i, "Comment without a whitespace before", (cpos, cend)))
     return warns
 
 
@@ -613,10 +620,10 @@ def check_acm_pc():
 def check_cite_noun():
     warns = []
     for i, l in enumerate(tex_lines):
-        ap = re.search("\\b(in|from|by|and|or)[\\s~]\\\\cite", l.lower())
+        ap = re.search("\\b(in|from|by|and|or)[\\s~]\\\\cite[^t]", l.lower())
         if ap:
             warns.append((i, "Citation is used as noun", ap.span()))
-        ap = re.search("^\\s*\\\\cite", l)
+        ap = re.search("^\\s*\\\\cite[^t]", l)
         if ap:
             warns.append((i, "Citation at the beginning of a sentence (probably as noun)", ap.span()))
     return warns
@@ -710,13 +717,13 @@ def check_acronym_capitalization():
 def check_numeral():
     warns = []
     replace = [
-        ("\\bthree\\b", "3"),
-        ("\\bfour\\b", "4"),
-        ("\\bfive\\b", "5"),
-        ("\\bsix\\b", "6"),
-        ("\\bseven\\b", "7"),
-        ("\\beight\\b", "8"),
-        ("\\bnine\\b", "9"),
+        #("\\bthree\\b", "3"),
+        #("\\bfour\\b", "4"),
+        #("\\bfive\\b", "5"),
+        #("\\bsix\\b", "6"),
+        #("\\bseven\\b", "7"),
+        #("\\beight\\b", "8"),
+        #("\\bnine\\b", "9"),
         ("\\bten\\b", "10"),
         ("\\beleven\\b", "11"),
         ("\\btwelve\\b", "12")
