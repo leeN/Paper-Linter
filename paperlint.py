@@ -816,6 +816,23 @@ def check_missing_word_style():
                     warns.append((i, "Word '%s' used without a style, used with \\text%s before at line %d (and %d other location%s)" % (s, word_style[s][1][1], word_style[s][0] + 1, word_style[s][2], "s" if word_style[s][2] == 1 else ""), w.span()))
     return warns
 
+def check_label_on_new_line():
+    warns = []
+    commands_with_labels = [ "caption", # figures, listings, tables, ..
+                            "section", "subsection", "subsubsection", "paragraph", # regular paper sectioning
+                            "chapter", "part" # Dissertation/book
+                            ]
+    for i, l in enumerate(tex_lines_clean):
+        label = re.search("^\\s*\\\\label\{([^\\}]+)\}", l)
+        if label and i > 1: # can't happen in first line, something is fubar in these cases beyond this issue
+            prev_line = tex_lines_clean[i-1]
+            for cmd in commands_with_labels:
+                labeled = re.search("\\\\"+cmd+"\{[^\\}]+\}[^%]*", prev_line)
+                # TODO: This is currently not quite optimal, as it will break
+                # on stuff like \section{\foo{}}% <nl> \label{sec:foo}
+                if labeled:
+                    warns.append((i, "Label '%s' is on a new line compared to target ('%s')" % (label.group(0), labeled.group(0)), label.span()))
+    return warns
 
 def print_warnings(warn, output = True):
     warnings = 0
@@ -907,7 +924,8 @@ checks = [
     (check_multicite,                   CATEGORY_STYLE,      "multiple-cites"),
     (check_colors,                      CATEGORY_VISUAL,     "colors"),
     (check_inconsistent_word_style,     CATEGORY_TYPOGRAPHY, "inconsistent-textstyle"),
-    (check_missing_word_style,          CATEGORY_TYPOGRAPHY, "missing-textstyle")
+    (check_missing_word_style,          CATEGORY_TYPOGRAPHY, "missing-textstyle"),
+    (check_label_on_new_line,           CATEGORY_TYPOGRAPHY, "label-on-newline")
 ]
 
 category_switches = [
